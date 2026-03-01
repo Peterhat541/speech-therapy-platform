@@ -10,6 +10,20 @@ if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 initializeDatabase();
 
+// Auto-seed on first boot if no users exist
+const { db } = require('./config/database');
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
+const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get();
+if (userCount.c === 0) {
+  const adminId = uuidv4();
+  const hashed = bcrypt.hashSync('admin123', 10);
+  db.prepare('INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)').run(
+    adminId, 'Dra. María González', 'admin@terapia.com', hashed, 'admin'
+  );
+  console.log('✓ Usuario admin creado: admin@terapia.com / admin123');
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
